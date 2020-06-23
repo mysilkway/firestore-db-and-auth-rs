@@ -16,8 +16,8 @@ struct Wrapper {
     extra: HashMap<String, Value>,
 }
 
-use serde_json::{map::Map, Number};
 use chrono::DateTime;
+use serde_json::{map::Map, Number};
 
 /// Converts a firebase google-rpc-api inspired heavily nested and wrapped response value
 /// of the Firebase REST API into a flattened serde json value.
@@ -93,8 +93,8 @@ pub(crate) fn serde_value_to_firebase_value(v: &serde_json::Value) -> dto::Value
             Err(e) => dto::Value {
                 string_value: Some(string_value.to_owned()),
                 ..Default::default()
-            }
-        }
+            },
+        };
     } else if let Some(boolean_value) = v.as_bool() {
         return dto::Value {
             boolean_value: Some(boolean_value),
@@ -122,8 +122,8 @@ pub(crate) fn serde_value_to_firebase_value(v: &serde_json::Value) -> dto::Value
 ///
 /// This method uses recursion to decode the given firebase type.
 pub fn document_to_pod<T>(document: &dto::Document) -> Result<T>
-    where
-            for<'de> T: Deserialize<'de>,
+where
+    for<'de> T: Deserialize<'de>,
 {
     // The firebase document has a field called "fields" that contain all top-level fields.
     // We want those to be flattened to our custom data structure. To not reinvent the wheel,
@@ -158,8 +158,8 @@ pub fn document_to_pod<T>(document: &dto::Document) -> Result<T>
 ///
 /// This method uses recursion to decode the given firebase type.
 pub fn pod_to_document<T>(pod: &T) -> Result<dto::Document>
-    where
-        T: Serialize,
+where
+    T: Serialize,
 {
     let v = serde_json::to_value(pod)?;
     Ok(dto::Document {
