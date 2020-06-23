@@ -1,3 +1,7 @@
+## Fork Information
+This is a fork of the master branch of davidgraeff/firestore-db-and-auth-rs.
+* Updated serde_value_to_firebase_value to read chrono::DateTime value as timestamp_value
+
 # Firestore API and Auth
 
 <img alt="Firestore Logo, Copyright by Google" align="right" src="https://github.com/davidgraeff/firestore-db-and-auth-rs/raw/master/doc/logo.png" />
