@@ -16,6 +16,7 @@ struct Wrapper {
     extra: HashMap<String, Value>,
 }
 
+use chrono::DateTime;
 use serde_json::{map::Map, Number};
 
 /// Converts a firebase google-rpc-api inspired heavily nested and wrapped response value
@@ -84,9 +85,15 @@ pub(crate) fn serde_value_to_firebase_value(v: &serde_json::Value) -> dto::Value
             ..Default::default()
         };
     } else if let Some(string_value) = v.as_str() {
-        return dto::Value {
-            string_value: Some(string_value.to_owned()),
-            ..Default::default()
+        return match DateTime::parse_from_rfc3339(string_value) {
+            Ok(dt) => dto::Value {
+                timestamp_value: Some(string_value.to_owned()),
+                ..Default::default()
+            },
+            Err(e) => dto::Value {
+                string_value: Some(string_value.to_owned()),
+                ..Default::default()
+            },
         };
     } else if let Some(boolean_value) = v.as_bool() {
         return dto::Value {
