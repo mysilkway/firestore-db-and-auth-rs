@@ -86,11 +86,11 @@ pub(crate) fn serde_value_to_firebase_value(v: &serde_json::Value) -> dto::Value
         };
     } else if let Some(string_value) = v.as_str() {
         return match DateTime::parse_from_rfc3339(string_value) {
-            Ok(dt) => dto::Value {
+            Ok(_dt) => dto::Value {
                 timestamp_value: Some(string_value.to_owned()),
                 ..Default::default()
             },
-            Err(e) => dto::Value {
+            Err(_e) => dto::Value {
                 string_value: Some(string_value.to_owned()),
                 ..Default::default()
             },
