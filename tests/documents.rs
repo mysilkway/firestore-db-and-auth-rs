@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use firestore_db_and_auth::errors::FirebaseError;
 use firestore_db_and_auth::*;
+use std::collections::HashMap;
 
 const TEST_USER_ID: &str = include_str!("test_user_id.txt");
 
@@ -10,6 +11,17 @@ struct DemoDTO {
     a_string: String,
     an_int: u32,
     a_timestamp: String,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    #[serde(default)]
+    a_map: HashMap<String, DemoMapDTO>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DemoMapDTO {
+    a_int: i32,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    #[serde(default)]
+    a_map: HashMap<String, String>,
 }
 
 /// Test if merge works. a_timestamp is not defined here,
@@ -34,10 +46,14 @@ fn service_account_session() -> errors::Result<()> {
 
     println!("Write document");
 
+    let mut a_map = HashMap::<String, DemoMapDTO>::new();
+    a_map.insert("a".to_string(), DemoMapDTO {a_int: 12, a_map: HashMap::default()});
+
     let obj = DemoDTO {
         a_string: "abcd".to_owned(),
         an_int: 14,
         a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
+        a_map,
     };
 
     documents::write(
@@ -115,10 +131,16 @@ fn user_account_session() -> errors::Result<()> {
 
     assert_eq!(user_session.user_id, TEST_USER_ID);
 
+    let mut a_map = HashMap::<String, DemoMapDTO>::new();
+    let mut b_map= HashMap::new();
+    b_map.insert("a".to_string(), "123".to_string());
+    a_map.insert("a".to_string(), DemoMapDTO {a_int: 12, a_map: HashMap::default()});
+
     let obj = DemoDTO {
         a_string: "abc".to_owned(),
         an_int: 12,
         a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
+        a_map,
     };
 
     // Test writing
