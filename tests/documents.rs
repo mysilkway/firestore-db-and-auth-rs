@@ -31,6 +31,9 @@ struct DemoDTOPartial {
     #[serde(skip_serializing_if = "Option::is_none")]
     a_string: Option<String>,
     an_int: u32,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    #[serde(default)]
+    a_map: HashMap<String, DemoMapDTO>,
 }
 
 #[test]
@@ -46,14 +49,13 @@ fn service_account_session() -> errors::Result<()> {
 
     println!("Write document");
 
-    let mut a_map = HashMap::<String, DemoMapDTO>::new();
-    a_map.insert("a".to_string(), DemoMapDTO {a_int: 12, a_map: HashMap::default()});
+    let mut a_map = HashMap::<String, DemoMapDTO>::default();
 
     let obj = DemoDTO {
         a_string: "abcd".to_owned(),
         an_int: 14,
         a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
-        a_map,
+        a_map: a_map.to_owned(),
     };
 
     documents::write(
@@ -72,9 +74,12 @@ fn service_account_session() -> errors::Result<()> {
 
     println!("Partial write document");
 
+    a_map.insert("a".to_string(), DemoMapDTO {a_int: 12, a_map: HashMap::default()});
+
     let obj = DemoDTOPartial {
         a_string: None,
         an_int: 16,
+        a_map: a_map.to_owned(),
     };
 
     documents::write(

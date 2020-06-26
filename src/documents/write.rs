@@ -98,8 +98,11 @@ where
     let firebase_document = pod_to_document(&document)?;
 
     if options.merge && firebase_document.fields.is_some() {
-        let fields = firebase_document.fields.as_ref().unwrap().keys().join(",");
-        url = format!("{}?currentDocument.exists=true&updateMask.fieldPaths={}", url, fields);
+        url = format!("{}?currentDocument.exists=true", url);
+        let fields = firebase_document.fields.as_ref().unwrap().keys();
+        for f in fields {
+            url += &format!("&updateMask.fieldPaths={}", f);
+        }
     }
 
     let builder = if document_id.is_some() {
