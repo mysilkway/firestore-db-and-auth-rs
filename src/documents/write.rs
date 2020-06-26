@@ -1,6 +1,4 @@
 use super::*;
-use serde_json::Value;
-use std::str::FromStr;
 
 /// This is returned by the write() method in a successful case.
 ///
@@ -124,9 +122,7 @@ where
             .unwrap()
     })?;
 
-    let body = resp.text()?;
-    let json_value: Value = Value::from_str(&body)?;
-    let result_document: dto::Document = serde_json::from_str(&json_value.to_string())?;
+    let result_document: dto::Document = resp.json()?;
     let document_id = Path::new(&result_document.name)
         .file_name()
         .ok_or_else(|| FirebaseError::Generic("Resulting documents 'name' field is not a valid path"))?
