@@ -38,3 +38,6 @@ native-tls = ["reqwest/native-tls"]
 native-tls-vendored = ["reqwest/native-tls-vendored"]
 unstable = []
 external_doc = []
+
+[dev-dependencies]
+tokio = { version = "0.2", features = ["macros", "fs"] }
