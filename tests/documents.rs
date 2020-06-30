@@ -74,7 +74,13 @@ fn service_account_session() -> errors::Result<()> {
 
     println!("Partial write document");
 
-    a_map.insert("a".to_string(), DemoMapDTO {a_int: 12, a_map: HashMap::default()});
+    a_map.insert(
+        "a".to_string(),
+        DemoMapDTO {
+            a_int: 12,
+            a_map: HashMap::default(),
+        },
+    );
 
     let obj = DemoDTOPartial {
         a_string: None,
@@ -137,9 +143,15 @@ fn user_account_session() -> errors::Result<()> {
     assert_eq!(user_session.user_id, TEST_USER_ID);
 
     let mut a_map = HashMap::<String, DemoMapDTO>::new();
-    let mut b_map= HashMap::new();
+    let mut b_map = HashMap::new();
     b_map.insert("a".to_string(), "123".to_string());
-    a_map.insert("a".to_string(), DemoMapDTO {a_int: 12, a_map: HashMap::default()});
+    a_map.insert(
+        "a".to_string(),
+        DemoMapDTO {
+            a_int: 12,
+            a_map: HashMap::default(),
+        },
+    );
 
     let obj = DemoDTO {
         a_string: "abc".to_owned(),
