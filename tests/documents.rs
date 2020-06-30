@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use firestore_db_and_auth::errors::FirebaseError;
 use firestore_db_and_auth::*;
 use std::collections::HashMap;
+use tokio::runtime::Runtime;
 
 const TEST_USER_ID: &str = include_str!("test_user_id.txt");
 
@@ -240,3 +241,77 @@ fn user_account_session() -> errors::Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn async_service_session() -> errors::Result<()> {
+    let cred = credentials::Credentials::from_file("firebase-service-account.json").expect("Read credentials file");
+    cred.verify()?;
+
+    let mut session = ServiceSession::new(cred).unwrap();
+    let b = session.access_token().to_owned();
+
+    // Check if cached value is used
+    assert_eq!(session.access_token(), b);
+
+    println!("Write document");
+
+    let mut a_map = HashMap::<String, DemoMapDTO>::default();
+
+    let obj = DemoDTO {
+        a_string: "abcd".to_owned(),
+        an_int: 14,
+        a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
+        a_map: a_map.to_owned(),
+    };
+
+    let mut sys = Runtime::new()?;
+
+    sys.block_on(documents::write_async(
+        &mut session,
+        "tests",
+        Some("service_test"),
+        &obj,
+        documents::WriteOptions::default(),
+    ))?;
+
+    println!("Read and compare document");
+    let read: DemoDTO = sys.block_on(documents::read_async(&mut session, "tests", "service_test"))?;
+
+    assert_eq!(read.a_string, "abcd");
+    assert_eq!(read.an_int, 14);
+
+    println!("Partial write document");
+
+    a_map.insert(
+        "a".to_string(),
+        DemoMapDTO {
+            a_int: 12,
+            a_map: HashMap::default(),
+        },
+    );
+
+    let obj = DemoDTOPartial {
+        a_string: None,
+        an_int: 16,
+        a_map: a_map.to_owned(),
+    };
+
+    sys.block_on(documents::write_async(
+        &mut session,
+        "tests",
+        Some("service_test"),
+        &obj,
+        documents::WriteOptions { merge: true },
+    ))?;
+
+    println!("Read and compare document");
+    let read: DemoDTOPartial = sys.block_on(documents::read_async(&mut session, "tests", "service_test"))?;
+
+    // Should be updated
+    assert_eq!(read.an_int, 16);
+    // Should still exist, because of the merge
+    assert_eq!(read.a_string, Some("abcd".to_owned()));
+
+    Ok(())
+}
+
