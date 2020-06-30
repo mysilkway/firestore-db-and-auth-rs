@@ -1,5 +1,4 @@
 use super::*;
-use crate::errors::extract_google_api_error_async;
 
 /// This is returned by the write() method in a successful case.
 ///

@@ -1,5 +1,4 @@
 use super::*;
-use crate::errors::extract_google_api_error_async;
 
 ///
 /// Read a document of a specific type from a collection by its Firestore document name
