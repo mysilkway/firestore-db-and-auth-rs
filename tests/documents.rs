@@ -12,12 +12,12 @@ struct DemoDTO {
     a_string: String,
     an_int: u32,
     a_timestamp: String,
-    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(default)]
-    a_map: HashMap<String, DemoMapDTO>,
+    a_map: Option<HashMap<String, DemoMapDTO>>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct DemoMapDTO {
     a_int: i32,
     #[serde(skip_serializing_if = "HashMap::is_empty")]
@@ -50,13 +50,13 @@ fn service_account_session() -> errors::Result<()> {
 
     println!("Write document");
 
-    let mut a_map = HashMap::<String, DemoMapDTO>::default();
+    let mut a_map = HashMap::<String, DemoMapDTO>::new();
 
     let obj = DemoDTO {
         a_string: "abcd".to_owned(),
         an_int: 14,
         a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
-        a_map: a_map.to_owned(),
+        a_map: Some(a_map.to_owned()),
     };
 
     documents::write(
@@ -158,7 +158,7 @@ fn user_account_session() -> errors::Result<()> {
         a_string: "abc".to_owned(),
         an_int: 12,
         a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
-        a_map,
+        a_map: Some(a_map),
     };
 
     // Test writing
@@ -261,7 +261,7 @@ fn async_service_session() -> errors::Result<()> {
         a_string: "abcd".to_owned(),
         an_int: 14,
         a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
-        a_map: a_map.to_owned(),
+        a_map: Some(a_map.to_owned()),
     };
 
     let mut sys = Runtime::new()?;
