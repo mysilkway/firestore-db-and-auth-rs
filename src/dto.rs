@@ -219,6 +219,7 @@ pub struct BatchGetDocumentsRequest {
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 pub struct MapValue {
+    #[serde(default)]
     pub fields: HashMap<String, Value>,
 }
 

@@ -5,6 +5,7 @@ This is a fork of the master branch of davidgraeff/firestore-db-and-auth-rs.
 * Use RwLock instead of RefCell for access_token and jwt in ServiceSession::Session and UserSession::Session so that it can be passed safely between threads
 * Add async function for query, read and write 
 * Fixed access token's expiry is not updated when re-generate
+* Added default value to MapValue when serializing
 
 # Firestore API and Auth
 
