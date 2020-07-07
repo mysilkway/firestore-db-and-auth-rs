@@ -306,7 +306,7 @@ pub mod service_account {
 
             if jwt_update_expiry_if(&mut jwt, 50) {
                 if let Some(secret) = self.credentials.keys.secret.as_ref() {
-                    if let Ok(v) = self.jwt.read().unwrap().encode(&secret.deref()) {
+                    if let Ok(v) = jwt.encode(&secret.deref()) {
                         if let Ok(v2) = v.encoded() {
                             let mut w = self.access_token_.write().unwrap();
                             *w = v2.encode();
