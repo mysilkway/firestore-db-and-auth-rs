@@ -11,7 +11,7 @@ use std::slice::Iter;
 use crate::errors::FirebaseError;
 use biscuit::jwa::SignatureAlgorithm;
 use biscuit::{ClaimPresenceOptions, SingleOrMultiple, StringOrUri, ValidationOptions};
-use std::ops::{Add, Deref};
+use std::ops::{Deref, Add};
 
 type Error = super::errors::FirebaseError;
 

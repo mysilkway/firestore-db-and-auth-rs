@@ -1,5 +1,4 @@
 use super::*;
-use crate::backoff::{exp_backoff, exp_backoff_async, retryable_http_status, FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME};
 use crate::errors::extract_google_api_error_async;
 
 ///
@@ -26,31 +25,14 @@ pub fn delete(auth: &impl FirebaseAuthBearer, path: &str, fail_if_not_existing: 
         ..Default::default()
     };
 
-    exp_backoff(
-        || {
-            let resp = auth
-                .client()
-                .delete(&url)
-                .bearer_auth(auth.access_token().to_owned())
-                .json(&query_request)
-                .send()
-                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
+    let resp = auth
+        .client()
+        .delete(&url)
+        .bearer_auth(auth.access_token().to_owned())
+        .json(&query_request)
+        .send()?;
 
-            let status = resp.status().as_u16();
-
-            match extract_google_api_error(resp, || path.to_owned()) {
-                Ok(new_resp) => Ok(new_resp),
-                Err(err) => {
-                    if retryable_http_status(status) {
-                        Err(backoff::Error::Transient(err))
-                    } else {
-                        Err(backoff::Error::Permanent(err))
-                    }
-                }
-            }
-        },
-        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
-    )?;
+    extract_google_api_error(resp, || path.to_owned())?;
 
     Ok({})
 }
@@ -81,33 +63,15 @@ pub async fn delete_async(auth: &impl FirebaseAuthBearer, path: &str, fail_if_no
         ..Default::default()
     };
 
-    exp_backoff_async(
-        || async {
-            let resp = auth
-                .client_async()
-                .delete(&url)
-                .bearer_auth(auth.access_token().to_owned())
-                .json(&query_request)
-                .send()
-                .await
-                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
+    let resp = auth
+        .client_async()
+        .delete(&url)
+        .bearer_auth(auth.access_token().to_owned())
+        .json(&query_request)
+        .send()
+        .await?;
 
-            let status = resp.status().as_u16();
-
-            match extract_google_api_error_async(resp, || path.to_owned()).await {
-                Ok(new_resp) => Ok(new_resp),
-                Err(err) => {
-                    if retryable_http_status(status) {
-                        Err(backoff::Error::Transient(err))
-                    } else {
-                        Err(backoff::Error::Permanent(err))
-                    }
-                }
-            }
-        },
-        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
-    )
-    .await?;
+    extract_google_api_error_async(resp, || path.to_owned()).await?;
 
     Ok({})
 }

@@ -1,5 +1,4 @@
 use super::*;
-use crate::backoff::{exp_backoff, exp_backoff_async, retryable_http_status, FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME};
 use std::vec::IntoIter;
 
 ///
@@ -67,31 +66,14 @@ pub fn query(
         ..Default::default()
     };
 
-    let resp = exp_backoff(
-        || {
-            let resp = auth
-                .client()
-                .post(&url)
-                .bearer_auth(auth.access_token().to_owned())
-                .json(&query_request)
-                .send()
-                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
+    let resp = auth
+        .client()
+        .post(&url)
+        .bearer_auth(auth.access_token().to_owned())
+        .json(&query_request)
+        .send()?;
 
-            let status = resp.status().as_u16();
-
-            match extract_google_api_error(resp, || collection_id.to_owned()) {
-                Ok(new_resp) => Ok(new_resp),
-                Err(err) => {
-                    if retryable_http_status(status) {
-                        Err(backoff::Error::Transient(err))
-                    } else {
-                        Err(backoff::Error::Permanent(err))
-                    }
-                }
-            }
-        },
-        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
-    )?;
+    let resp = extract_google_api_error(resp, || collection_id.to_owned())?;
 
     let json: Option<Vec<dto::RunQueryResponse>> = resp.json()?;
 
@@ -136,33 +118,15 @@ pub async fn query_async(
         ..Default::default()
     };
 
-    let resp = exp_backoff_async(
-        || async {
-            let resp = auth
-                .client_async()
-                .post(&url)
-                .bearer_auth(auth.access_token().to_owned())
-                .json(&query_request)
-                .send()
-                .await
-                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
+    let resp = auth
+        .client_async()
+        .post(&url)
+        .bearer_auth(auth.access_token().to_owned())
+        .json(&query_request)
+        .send()
+        .await?;
 
-            let status = resp.status().as_u16();
-
-            match extract_google_api_error_async(resp, || collection_id.to_owned()).await {
-                Ok(new_resp) => Ok(new_resp),
-                Err(err) => {
-                    if retryable_http_status(status) {
-                        Err(backoff::Error::Transient(err))
-                    } else {
-                        Err(backoff::Error::Permanent(err))
-                    }
-                }
-            }
-        },
-        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
-    )
-    .await?;
+    let resp = extract_google_api_error_async(resp, || collection_id.to_owned()).await?;
 
     let json: Option<Vec<dto::RunQueryResponse>> = resp.json().await?;
 

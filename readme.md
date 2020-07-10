@@ -6,7 +6,6 @@ This is a fork of the master branch of davidgraeff/firestore-db-and-auth-rs.
 * Add async function for query, read and write 
 * Fixed access token's expiry is not updated when re-generate
 * Added default value to MapValue when serializing
-* Added exponential backoff to firestore request
 
 # Firestore API and Auth
 
