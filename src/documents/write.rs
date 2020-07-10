@@ -1,4 +1,5 @@
 use super::*;
+use crate::backoff::{exp_backoff, exp_backoff_async, retryable_http_status, FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME};
 
 /// This is returned by the write() method in a successful case.
 ///
@@ -103,24 +104,41 @@ where
         }
     }
 
-    let builder = if document_id.is_some() {
-        auth.client().patch(&url)
-    } else {
-        auth.client().post(&url)
-    };
+    let resp = exp_backoff(
+        || {
+            let builder = if document_id.is_some() {
+                auth.client().patch(&url)
+            } else {
+                auth.client().post(&url)
+            };
 
-    let resp = builder
-        .bearer_auth(auth.access_token().to_owned())
-        .json(&firebase_document)
-        .send()?;
+            let resp = builder
+                .bearer_auth(auth.access_token().to_owned())
+                .json(&firebase_document)
+                .send()
+                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
 
-    let resp = extract_google_api_error(resp, || {
-        document_id
-            .as_ref()
-            .and_then(|f| Some(f.as_ref().to_owned()))
-            .or(Some(String::new()))
-            .unwrap()
-    })?;
+            let status = resp.status().as_u16();
+
+            match extract_google_api_error(resp, || {
+                document_id
+                    .as_ref()
+                    .and_then(|f| Some(f.as_ref().to_owned()))
+                    .or(Some(String::new()))
+                    .unwrap()
+            }) {
+                Ok(new_resp) => Ok(new_resp),
+                Err(err) => {
+                    if retryable_http_status(status) {
+                        Err(backoff::Error::Transient(err))
+                    } else {
+                        Err(backoff::Error::Permanent(err))
+                    }
+                }
+            }
+        },
+        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
+    )?;
 
     let result_document: dto::Document = resp.json()?;
     let document_id = Path::new(&result_document.name)
@@ -187,25 +205,44 @@ where
         }
     }
 
-    let builder = if document_id.is_some() {
-        auth.client_async().patch(&url)
-    } else {
-        auth.client_async().post(&url)
-    };
+    let resp = exp_backoff_async(
+        || async {
+            let builder = if document_id.is_some() {
+                auth.client_async().patch(&url)
+            } else {
+                auth.client_async().post(&url)
+            };
 
-    let resp = builder
-        .bearer_auth(auth.access_token().to_owned())
-        .json(&firebase_document)
-        .send()
-        .await?;
+            let resp = builder
+                .bearer_auth(auth.access_token().to_owned())
+                .json(&firebase_document)
+                .send()
+                .await
+                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
 
-    let resp = extract_google_api_error_async(resp, || {
-        document_id
-            .as_ref()
-            .and_then(|f| Some(f.as_ref().to_owned()))
-            .or(Some(String::new()))
-            .unwrap()
-    })
+            let status = resp.status().as_u16();
+
+            match extract_google_api_error_async(resp, || {
+                document_id
+                    .as_ref()
+                    .and_then(|f| Some(f.as_ref().to_owned()))
+                    .or(Some(String::new()))
+                    .unwrap()
+            })
+            .await
+            {
+                Ok(new_resp) => Ok(new_resp),
+                Err(err) => {
+                    if retryable_http_status(status) {
+                        Err(backoff::Error::Transient(err))
+                    } else {
+                        Err(backoff::Error::Permanent(err))
+                    }
+                }
+            }
+        },
+        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
+    )
     .await?;
 
     let result_document: dto::Document = resp.json().await?;
