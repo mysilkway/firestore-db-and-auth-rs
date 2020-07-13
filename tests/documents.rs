@@ -314,4 +314,3 @@ fn async_service_session() -> errors::Result<()> {
 
     Ok(())
 }
-
