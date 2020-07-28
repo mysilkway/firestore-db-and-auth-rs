@@ -111,7 +111,7 @@ pub(crate) fn serde_value_to_firebase_value(v: &serde_json::Value) -> dto::Value
         };
     } else if let Some(_) = v.as_null() {
         return dto::Value {
-            null_value: Some(String::new()),
+            null_value: Some("null".to_string()),
             ..Default::default()
         };
     }
@@ -186,6 +186,7 @@ mod tests {
         integer_test: u32,
         boolean_test: bool,
         string_test: String,
+        null_test: Option<String>,
     }
 
     #[test]
@@ -212,6 +213,13 @@ mod tests {
                 ..Default::default()
             },
         );
+        map.insert(
+            "null_test".to_owned(),
+            dto::Value {
+                null_value: Some("".to_owned()),
+                ..Default::default()
+            },
+        );
         let t = dto::Document {
             fields: Some(map),
             ..Default::default()
@@ -220,6 +228,7 @@ mod tests {
         assert_eq!(firebase_doc.string_test, "abc");
         assert_eq!(firebase_doc.integer_test, 12);
         assert_eq!(firebase_doc.boolean_test, true);
+        assert_eq!(firebase_doc.null_test, None);
 
         Ok(())
     }
@@ -230,17 +239,28 @@ mod tests {
             integer_test: 12,
             boolean_test: true,
             string_test: "abc".to_owned(),
+            null_test: None,
         };
         let firebase_doc = pod_to_document(&t)?;
         let map = firebase_doc.fields;
         assert_eq!(
-            map.unwrap()
+            map.as_ref()
+                .unwrap()
                 .get("integer_test")
                 .expect("a value in the map for integer_test")
                 .integer_value
                 .as_ref()
                 .expect("an integer value"),
             "12"
+        );
+        assert_eq!(
+            map.unwrap()
+                .get("null_test")
+                .expect("a value in the map for null_test")
+                .null_value
+                .as_ref()
+                .expect("an null value"),
+            "null"
         );
 
         Ok(())
