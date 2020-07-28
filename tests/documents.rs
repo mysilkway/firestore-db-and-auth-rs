@@ -48,8 +48,6 @@ fn service_account_session() -> errors::Result<()> {
     // Check if cached value is used
     assert_eq!(session.access_token(), b);
 
-    println!("Write document");
-
     let mut a_map = HashMap::<String, DemoMapDTO>::default();
 
     let obj = DemoDTO {
@@ -58,6 +56,28 @@ fn service_account_session() -> errors::Result<()> {
         a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
         a_map: a_map.to_owned(),
     };
+
+    println!("Create document");
+    documents::create(&mut session, "tests", "service_test_create", &obj)?;
+
+    // create document with same id, expecting error returned
+    let res = documents::create(&mut session, "tests", "service_test_create", &obj);
+    assert!(res.is_err());
+    if let FirebaseError::APIError(code, _, _) = res.as_ref().err().unwrap() {
+        assert_eq!(*code, 409);
+    } else {
+        debug_assert!(false, "{:?}", res.err());
+    }
+
+    println!("Read and compare document");
+    let read: DemoDTO = documents::read(&mut session, "tests", "service_test_create")?;
+    assert_eq!(read.a_string, "abcd");
+    assert_eq!(read.an_int, 14);
+
+    println!("Delete document");
+    documents::delete(&session, "tests/service_test_create", true)?;
+
+    println!("Write document");
 
     documents::write(
         &mut session,
@@ -253,8 +273,6 @@ fn async_service_session() -> errors::Result<()> {
     // Check if cached value is used
     assert_eq!(session.access_token(), b);
 
-    println!("Write document");
-
     let mut a_map = HashMap::<String, DemoMapDTO>::default();
 
     let obj = DemoDTO {
@@ -265,6 +283,38 @@ fn async_service_session() -> errors::Result<()> {
     };
 
     let mut sys = Runtime::new()?;
+
+    println!("Create document");
+    sys.block_on(documents::create_async(
+        &mut session,
+        "tests",
+        "service_test_create",
+        &obj,
+    ))?;
+
+    // create document with same id, expecting error returned
+    let res = sys.block_on(documents::create_async(
+        &mut session,
+        "tests",
+        "service_test_create",
+        &obj,
+    ));
+    assert!(res.is_err());
+    if let FirebaseError::APIError(code, _, _) = res.as_ref().err().unwrap() {
+        assert_eq!(*code, 409);
+    } else {
+        debug_assert!(false, "{:?}", res.err());
+    }
+
+    println!("Read and compare document");
+    let read: DemoDTO = sys.block_on(documents::read_async(&mut session, "tests", "service_test_create"))?;
+    assert_eq!(read.a_string, "abcd");
+    assert_eq!(read.an_int, 14);
+
+    println!("Delete document");
+    documents::delete(&session, "tests/service_test_create", true)?;
+
+    println!("Write document");
 
     sys.block_on(documents::write_async(
         &mut session,

@@ -239,3 +239,130 @@ where
         update_time,
     })
 }
+
+///
+/// create document function
+/// ## Arguments
+/// * 'auth' The authentication token
+/// * 'path' The document path / collection; For example "my_collection" or "a/nested/collection"
+/// * 'document_id' The document id. Make sure that you do not include the document id in the path argument.
+/// * 'document' The document
+/// * 'options' Write options
+pub fn create<T>(
+    auth: &impl FirebaseAuthBearer,
+    path: &str,
+    document_id: impl AsRef<str>,
+    document: &T,
+) -> Result<WriteResult>
+where
+    T: Serialize,
+{
+    let mut url = firebase_url(auth.project_id(), path);
+    url = format!("{}documentId={}", url, document_id.as_ref());
+
+    let firebase_document = pod_to_document(&document)?;
+
+    let resp = auth
+        .client()
+        .post(&url)
+        .bearer_auth(auth.access_token().to_owned())
+        .json(&firebase_document)
+        .send()?;
+
+    let resp = extract_google_api_error(resp, || document_id.as_ref().to_owned())?;
+
+    let result_document: dto::Document = resp.json()?;
+    let document_id = Path::new(&result_document.name)
+        .file_name()
+        .ok_or_else(|| FirebaseError::Generic("Resulting documents 'name' field is not a valid path"))?
+        .to_str()
+        .ok_or_else(|| FirebaseError::Generic("No valid unicode in 'name' field"))?
+        .to_owned();
+
+    let create_time = match result_document.create_time {
+        Some(f) => Some(
+            chrono::DateTime::parse_from_rfc3339(&f)
+                .map_err(|_| FirebaseError::Generic("Failed to parse rfc3339 date from 'create_time' field"))?
+                .with_timezone(&chrono::Utc),
+        ),
+        None => None,
+    };
+    let update_time = match result_document.update_time {
+        Some(f) => Some(
+            chrono::DateTime::parse_from_rfc3339(&f)
+                .map_err(|_| FirebaseError::Generic("Failed to parse rfc3339 date from 'update_time' field"))?
+                .with_timezone(&chrono::Utc),
+        ),
+        None => None,
+    };
+
+    Ok(WriteResult {
+        document_id,
+        create_time,
+        update_time,
+    })
+}
+
+///
+/// [Async] create document function
+/// ## Arguments
+/// * 'auth' The authentication token
+/// * 'path' The document path / collection; For example "my_collection" or "a/nested/collection"
+/// * 'document_id' The document id. Make sure that you do not include the document id in the path argument.
+/// * 'document' The document
+/// * 'options' Write options
+pub async fn create_async<T>(
+    auth: &impl FirebaseAuthBearer,
+    path: &str,
+    document_id: impl AsRef<str>,
+    document: &T,
+) -> Result<WriteResult>
+where
+    T: Serialize,
+{
+    let mut url = firebase_url(auth.project_id(), path);
+    url = format!("{}documentId={}", url, document_id.as_ref());
+
+    let firebase_document = pod_to_document(&document)?;
+
+    let resp = auth
+        .client_async()
+        .post(&url)
+        .bearer_auth(auth.access_token().to_owned())
+        .json(&firebase_document)
+        .send()
+        .await?;
+
+    let resp = extract_google_api_error_async(resp, || document_id.as_ref().to_owned()).await?;
+
+    let result_document: dto::Document = resp.json().await?;
+    let document_id = Path::new(&result_document.name)
+        .file_name()
+        .ok_or_else(|| FirebaseError::Generic("Resulting documents 'name' field is not a valid path"))?
+        .to_str()
+        .ok_or_else(|| FirebaseError::Generic("No valid unicode in 'name' field"))?
+        .to_owned();
+
+    let create_time = match result_document.create_time {
+        Some(f) => Some(
+            chrono::DateTime::parse_from_rfc3339(&f)
+                .map_err(|_| FirebaseError::Generic("Failed to parse rfc3339 date from 'create_time' field"))?
+                .with_timezone(&chrono::Utc),
+        ),
+        None => None,
+    };
+    let update_time = match result_document.update_time {
+        Some(f) => Some(
+            chrono::DateTime::parse_from_rfc3339(&f)
+                .map_err(|_| FirebaseError::Generic("Failed to parse rfc3339 date from 'update_time' field"))?
+                .with_timezone(&chrono::Utc),
+        ),
+        None => None,
+    };
+
+    Ok(WriteResult {
+        document_id,
+        create_time,
+        update_time,
+    })
+}

@@ -7,6 +7,7 @@ This is a fork of the master branch of davidgraeff/firestore-db-and-auth-rs.
 * Fixed access token's expiry is not updated when re-generate
 * Added default value to MapValue when serializing
 * Added exponential backoff to firestore request
+* Added documents::create and documents::create_async function for creating document
 
 # Firestore API and Auth
 
