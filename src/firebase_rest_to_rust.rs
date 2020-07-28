@@ -109,6 +109,11 @@ pub(crate) fn serde_value_to_firebase_value(v: &serde_json::Value) -> dto::Value
             array_value: Some(dto::ArrayValue { values: Some(vec) }),
             ..Default::default()
         };
+    } else if let Some(_) = v.as_null() {
+        return dto::Value {
+            null_value: Some(String::new()),
+            ..Default::default()
+        };
     }
     Default::default()
 }
