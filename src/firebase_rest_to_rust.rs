@@ -111,7 +111,7 @@ pub(crate) fn serde_value_to_firebase_value(v: &serde_json::Value) -> dto::Value
         };
     } else if let Some(_) = v.as_null() {
         return dto::Value {
-            null_value: Some("null".to_string()),
+            null_value: Some(Value::Null),
             ..Default::default()
         };
     }
@@ -216,7 +216,7 @@ mod tests {
         map.insert(
             "null_test".to_owned(),
             dto::Value {
-                null_value: Some("".to_owned()),
+                null_value: Some(Value::Null),
                 ..Default::default()
             },
         );
@@ -253,15 +253,15 @@ mod tests {
                 .expect("an integer value"),
             "12"
         );
-        assert_eq!(
-            map.unwrap()
-                .get("null_test")
-                .expect("a value in the map for null_test")
-                .null_value
-                .as_ref()
-                .expect("an null value"),
-            "null"
-        );
+        assert!(map
+            .unwrap()
+            .get("null_test")
+            .expect("a value in the map for null_test")
+            .null_value
+            .as_ref()
+            .expect("a null value")
+            .as_null()
+            .is_some());
 
         Ok(())
     }
