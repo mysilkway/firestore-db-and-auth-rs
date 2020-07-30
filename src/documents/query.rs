@@ -18,10 +18,10 @@ use std::vec::IntoIter;
 ///                                         &[include_str!("../../tests/service-account-for-tests.jwks")])?;
 /// # let session = ServiceSession::new(credentials)?;
 ///
-/// let mut orderby = HashMap::new();
-/// orderby.insert("age".to_owned(), true);
+/// let mut orderby = vec![];
+/// orderby.push(("age".to_owned(), true));
 ///
-/// let values: documents::Query = documents::query(&session, "tests", Some(("Sam Weiss".into(), "id", dto::FieldOperator::EQUAL)), Some(orderby))?;
+/// let values: documents::Query = documents::query(&session, "tests", Some(("Sam Weiss".into(), dto::FieldOperator::EQUAL, "id")), Some(orderby))?;
 /// for metadata in values {
 ///     println!("id: {}, created: {}, updated: {}", &metadata.name, metadata.create_time.as_ref().unwrap(), metadata.update_time.as_ref().unwrap());
 ///     // Fetch the actual document
