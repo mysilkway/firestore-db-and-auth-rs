@@ -11,7 +11,7 @@ use std::slice::Iter;
 use crate::errors::FirebaseError;
 use biscuit::jwa::SignatureAlgorithm;
 use biscuit::{ClaimPresenceOptions, SingleOrMultiple, StringOrUri, ValidationOptions};
-use std::ops::Deref;
+use std::ops::{Add, Deref};
 
 type Error = super::errors::FirebaseError;
 
@@ -113,11 +113,13 @@ pub(crate) fn jwt_update_expiry_if(jwt: &mut AuthClaimsJWT, expire_in_minutes: i
         let diff: Duration = Utc::now().signed_duration_since(issued_at.deref().clone());
         if diff.num_minutes() > expire_in_minutes {
             claims.issued_at = Some(now);
+            claims.expiry = Some(biscuit::Timestamp::from(now.add(chrono::Duration::hours(1))));
         } else {
             return false;
         }
     } else {
         claims.issued_at = Some(now);
+        claims.expiry = Some(biscuit::Timestamp::from(now.add(chrono::Duration::hours(1))));
     }
 
     true
@@ -134,7 +136,6 @@ pub(crate) fn create_jwt<S>(
 where
     S: AsRef<str>,
 {
-    use std::ops::Add;
     use std::str::FromStr;
 
     use biscuit::{

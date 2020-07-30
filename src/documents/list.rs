@@ -55,13 +55,30 @@ fn get_new_data<'a>(
     url: &str,
     auth: &'a impl FirebaseAuthBearer,
 ) -> Result<dto::ListDocumentsResponse> {
-    let resp = auth
-        .client()
-        .get(url)
-        .bearer_auth(auth.access_token().to_owned())
-        .send()?;
+    let resp = exp_backoff(
+        || {
+            let resp = auth
+                .client()
+                .get(url)
+                .bearer_auth(auth.access_token().to_owned())
+                .send()
+                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
 
-    let resp = extract_google_api_error(resp, || collection_id.to_owned())?;
+            let status = resp.status().as_u16();
+
+            match extract_google_api_error(resp, || collection_id.to_owned()) {
+                Ok(new_resp) => Ok(new_resp),
+                Err(err) => {
+                    if retryable_http_status(status) {
+                        Err(backoff::Error::Transient(err))
+                    } else {
+                        Err(backoff::Error::Permanent(err))
+                    }
+                }
+            }
+        },
+        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
+    )?;
 
     let json: dto::ListDocumentsResponse = resp.json()?;
     Ok(json)

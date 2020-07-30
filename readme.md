@@ -3,7 +3,11 @@ This is a fork of the master branch of davidgraeff/firestore-db-and-auth-rs.
 * Updated serde_value_to_firebase_value to read chrono::DateTime value as timestamp_value
 * Updated updateMask.fieldPaths to be specified per updated fields to fix invalid property value when updating structs of nested map
 * Use RwLock instead of RefCell for access_token and jwt in ServiceSession::Session and UserSession::Session so that it can be passed safely between threads
-* Add async function for read and write and query 
+* Add async function for query, read and write 
+* Fixed access token's expiry is not updated when re-generate
+* Added default value to MapValue when serializing
+* Added exponential backoff to firestore request
+* Added documents::create and documents::create_async function for creating document
 * Amend query function to include order by functionality
 
 # Firestore API and Auth
