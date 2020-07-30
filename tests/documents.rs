@@ -340,7 +340,7 @@ fn async_service_session() -> errors::Result<()> {
 
     let mut a_map_2 = HashMap::<String, DemoMapDTO>::default();
     a_map_2.insert(
-        "00000000-0000-0000-0000-000000000001".to_owned(),
+        "000".to_owned(),
         DemoMapDTO {
             a_int: 0,
             a_map: Default::default(),
@@ -413,7 +413,7 @@ fn async_service_session() -> errors::Result<()> {
     println!("Query with order by");
     let mut orderby = vec![];
 
-    orderby.push(("a_map.`00000000-0000-0000-0000-000000000001`".to_owned(), true));
+    orderby.push(("a_map.`000`".to_owned(), true));
     let results: Vec<dto::Document> = sys
         .block_on(documents::query_async(&mut session, "tests", None, Some(orderby)))?
         .collect();

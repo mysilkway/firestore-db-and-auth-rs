@@ -36,7 +36,7 @@ use std::vec::IntoIter;
 /// * 'auth' The authentication token
 /// * 'collectionid' The collection id; "my_collection" or "a/nested/collection"
 /// * 'select_value' The query / filter value. For example (value, field, operator)
-/// * 'orderby_value The order by value. For example ("field_1": true) for order by field_1 ascendingly, ("a_map.`00000000-0000-0000-0000-000000000001`": true) for orderby query with uuid
+/// * 'orderby_value The order by value. For example array of ("field_1": true) for order by field_1 ascendingly, ("a_map.`000`": true) for orderby query start with numbers
 pub fn query(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
@@ -127,7 +127,7 @@ pub fn query(
 /// * 'auth' The authentication token
 /// * 'collectionid' The collection id; "my_collection" or "a/nested/collection"
 /// * 'select_value' The query / filter value. For example (value, field, operator)
-/// * 'orderby_value The order by value. For example ("field_1": true) for order by field_1 ascendingly, ("a_map.`00000000-0000-0000-0000-000000000001`": true) for orderby query with uuid
+/// * 'orderby_value The order by value. For example array of ("field_1": true) for order by field_1 ascendingly, ("a_map.`000`": true) for orderby query start with numbers
 pub async fn query_async(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
