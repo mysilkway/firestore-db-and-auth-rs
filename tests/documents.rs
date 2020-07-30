@@ -17,7 +17,7 @@ struct DemoDTO {
     a_map: Option<HashMap<String, DemoMapDTO>>,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DemoMapDTO {
     a_int: i32,
     #[serde(skip_serializing_if = "HashMap::is_empty")]
@@ -50,7 +50,7 @@ fn service_account_session() -> errors::Result<()> {
 
     println!("Write document");
 
-    let mut a_map = HashMap::<String, DemoMapDTO>::new();
+    let mut a_map = HashMap::<String, DemoMapDTO>::default();
 
     let obj = DemoDTO {
         a_string: "abcd".to_owned(),
