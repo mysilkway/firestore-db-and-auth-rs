@@ -1,5 +1,4 @@
 use super::*;
-use std::collections::HashMap;
 use std::vec::IntoIter;
 
 ///
@@ -42,7 +41,7 @@ pub fn query(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
     where_value: Option<(serde_json::Value, dto::FieldOperator, &str)>,
-    orderby_value: Option<HashMap<String, bool>>,
+    orderby_value: Option<Vec<(String, bool)>>,
 ) -> Result<Query> {
     let url = firebase_url_query(auth.project_id());
 
@@ -133,7 +132,7 @@ pub async fn query_async(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
     where_value: Option<(serde_json::Value, dto::FieldOperator, &str)>,
-    orderby_value: Option<HashMap<String, bool>>,
+    orderby_value: Option<Vec<(String, bool)>>,
 ) -> Result<Query> {
     let url = firebase_url_query(auth.project_id());
 

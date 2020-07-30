@@ -230,8 +230,8 @@ fn user_account_session() -> errors::Result<()> {
 
     // Query for all documents with sub field a_map.a
     println!("user::Session documents::query with orderby");
-    let mut orderby = HashMap::new();
-    orderby.insert("a_map.a".to_owned(), true);
+    let mut orderby = vec![];
+    orderby.push(("a_map.a".to_owned(), true));
     let results: Vec<dto::Document> = documents::query(&user_session, "tests", None, Some(orderby))?.collect();
 
     assert_eq!(results.len(), 1);
@@ -411,8 +411,8 @@ fn async_service_session() -> errors::Result<()> {
     assert_eq!(results.len(), 1);
 
     println!("Query with order by");
-    let mut orderby = HashMap::new();
-    orderby.insert("a_map.kk".to_owned(), true);
+    let mut orderby = vec![];
+    orderby.push(("a_map.kk".to_owned(), true));
     let results: Vec<dto::Document> = sys
         .block_on(documents::query_async(&mut session, "tests", None, Some(orderby)))?
         .collect();
