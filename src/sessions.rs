@@ -60,7 +60,7 @@ pub mod user {
         ///
         /// If the refresh failed, this will
         fn access_token(&self) -> String {
-            let jwt ;
+            let jwt;
             {
                 jwt = self.access_token_.read().unwrap().clone();
             }

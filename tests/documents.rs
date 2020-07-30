@@ -188,24 +188,33 @@ fn user_account_session() -> errors::Result<()> {
     assert_eq!(read.an_int, 12);
 
     // Query for all documents with field "a_string" and value "abc"
+    println!("user::Session documents::query with where");
     let results: Vec<dto::Document> = documents::query(
         &user_session,
         "tests",
-        "abc".into(),
-        dto::FieldOperator::EQUAL,
-        "a_string",
+        Some(("abc".into(), "a_string", dto::FieldOperator::EQUAL)),
+        None,
     )?
     .collect();
     assert_eq!(results.len(), 1);
     let doc: DemoDTO = documents::read_by_name(&user_session, &results.get(0).unwrap().name)?;
     assert_eq!(doc.a_string, "abc");
 
+    println!("user::Session documents::list");
     let mut count = 0;
     let list_it: documents::List<DemoDTO, _> = documents::list(&user_session, "tests".to_owned());
     for _doc in list_it {
         count += 1;
     }
-    assert_eq!(count, 2);
+    assert_eq!(count, 1);
+
+    // Query for all documents with sub field a_map.a
+    println!("user::Session documents::query with orderby");
+    let mut orderby = HashMap::new();
+    orderby.insert("a_map.a".to_owned(), true);
+    let results: Vec<dto::Document> = documents::query(&user_session, "tests", None, Some(orderby))?.collect();
+
+    assert_eq!(results.len(), 1);
 
     // test if the call fails for a non existing document
     println!("user::Session documents::delete");
@@ -227,16 +236,21 @@ fn user_account_session() -> errors::Result<()> {
     let count = documents::query(
         &user_session,
         "tests",
-        "abc".into(),
-        dto::FieldOperator::EQUAL,
-        "a_string",
+        Some(("abc".into(), "a_string", dto::FieldOperator::EQUAL)),
+        None,
     )?
     .count();
     assert_eq!(count, 0);
 
     println!("user::Session documents::query for f64");
     let f: f64 = 13.37;
-    let count = documents::query(&user_session, "tests", f.into(), dto::FieldOperator::EQUAL, "a_float")?.count();
+    let count = documents::query(
+        &user_session,
+        "tests",
+        Some((f.into(), "a_float", dto::FieldOperator::EQUAL)),
+        None,
+    )?
+    .count();
     assert_eq!(count, 0);
 
     Ok(())
@@ -271,6 +285,29 @@ fn async_service_session() -> errors::Result<()> {
         "tests",
         Some("service_test"),
         &obj,
+        documents::WriteOptions::default(),
+    ))?;
+
+    let mut a_map_2 = HashMap::<String, DemoMapDTO>::default();
+    a_map_2.insert(
+        "kk".to_owned(),
+        DemoMapDTO {
+            a_int: 0,
+            a_map: Default::default(),
+        },
+    );
+    let obj2 = DemoDTO {
+        a_string: "def".to_owned(),
+        an_int: 14,
+        a_timestamp: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Nanos, true),
+        a_map: Some(a_map_2.to_owned()),
+    };
+
+    sys.block_on(documents::write_async(
+        &mut session,
+        "tests",
+        Some("service_test_2"),
+        &obj2,
         documents::WriteOptions::default(),
     ))?;
 
@@ -312,6 +349,24 @@ fn async_service_session() -> errors::Result<()> {
     // Should still exist, because of the merge
     assert_eq!(read.a_string, Some("abcd".to_owned()));
 
+    println!("Query with where");
+    let results: Vec<dto::Document> = sys
+        .block_on(documents::query_async(
+            &mut session,
+            "tests",
+            Some(("abcd".into(), "a_string", dto::FieldOperator::EQUAL)),
+            None,
+        ))?
+        .collect();
+    assert_eq!(results.len(), 1);
+
+    println!("Query with order by");
+    let mut orderby = HashMap::new();
+    orderby.insert("a_map.kk".to_owned(), true);
+    let results: Vec<dto::Document> = sys
+        .block_on(documents::query_async(&mut session, "tests", None, Some(orderby)))?
+        .collect();
+    assert_eq!(results.len(), 1);
+
     Ok(())
 }
-
