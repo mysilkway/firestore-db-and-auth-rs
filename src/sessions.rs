@@ -60,7 +60,10 @@ pub mod user {
         ///
         /// If the refresh failed, this will
         fn access_token(&self) -> String {
-            let jwt = self.access_token_.read().unwrap();
+            let jwt;
+            {
+                jwt = self.access_token_.read().unwrap().clone();
+            }
             let jwt = jwt.as_str();
 
             if is_expired(&jwt, 0).unwrap() {

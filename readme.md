@@ -8,6 +8,7 @@ This is a fork of the master branch of davidgraeff/firestore-db-and-auth-rs.
 * Added default value to MapValue when serializing
 * Added exponential backoff to firestore request
 * Added documents::create and documents::create_async function for creating document
+* Amend query function to include order by functionality
 
 # Firestore API and Auth
 
@@ -111,13 +112,16 @@ for doc_result in values {
 *Note:* The resulting list or list cursor is a snapshot view with a limited lifetime.
 You cannot keep the iterator for long or expect new documents to appear in an ongoing iteration.
 
-For quering the database you would use the `query` method.
+For querying the database you would use the `query` method.
 In the following example the collection "tests" is queried for document(s) with the "id" field equal to "Sam Weiss".
 
 ```rust
 use firestore_db_and_auth::{documents, dto};
 
-let values = documents::query(&session, "tests", "Sam Weiss".into(), dto::FieldOperator::EQUAL, "id")?;
+let orderby = HashMap::new();
+orderby.insert("a_string".to_owned(), true); // true for ascending
+
+let values = documents::query(&session, "tests", Some("Sam Weiss".into(), dto::FieldOperator::EQUAL, "id"), Some(orderby))?;
 for metadata in values {
     println!("id: {}, created: {}, updated: {}", metadata.name.as_ref().unwrap(), metadata.create_time.as_ref().unwrap(), metadata.update_time.as_ref().unwrap());
     // Fetch the actual document

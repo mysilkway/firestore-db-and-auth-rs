@@ -1,4 +1,5 @@
 use super::*;
+use std::collections::HashMap;
 use std::vec::IntoIter;
 
 ///
@@ -11,13 +12,17 @@ use std::vec::IntoIter;
 /// struct DemoDTO { a_string: String, an_int: u32, }
 ///
 /// use firestore_db_and_auth::{documents, dto};
+/// use std::collections::HashMap;
 /// # use firestore_db_and_auth::{credentials::Credentials, ServiceSession, errors::Result};
 ///
 /// # let credentials = Credentials::new(include_str!("../../firebase-service-account.json"),
 ///                                         &[include_str!("../../tests/service-account-for-tests.jwks")])?;
 /// # let session = ServiceSession::new(credentials)?;
 ///
-/// let values: documents::Query = documents::query(&session, "tests", "Sam Weiss".into(), dto::FieldOperator::EQUAL, "id")?;
+/// let mut orderby = HashMap::new();
+/// orderby.insert("age".to_owned(), true);
+///
+/// let values: documents::Query = documents::query(&session, "tests", Some(("Sam Weiss".into(), "id", dto::FieldOperator::EQUAL)), Some(orderby))?;
 /// for metadata in values {
 ///     println!("id: {}, created: {}, updated: {}", &metadata.name, metadata.create_time.as_ref().unwrap(), metadata.update_time.as_ref().unwrap());
 ///     // Fetch the actual document
@@ -25,44 +30,65 @@ use std::vec::IntoIter;
 ///     let doc : DemoDTO = documents::read_by_name(&session, &metadata.name)?;
 ///     println!("{:?}", doc);
 /// }
-/// # Ok::<(), firestore_db_and_auth::errors::FirebaseError>(())
+///
 /// ```
 ///
 /// ## Arguments
 /// * 'auth' The authentication token
 /// * 'collectionid' The collection id; "my_collection" or "a/nested/collection"
-/// * 'value' The query / filter value. For example "car".
-/// * 'operator' The query operator. For example "EQUAL".
-/// * 'field' The query / filter field. For example "type".
+/// * 'select_value' The query / filter value. For example (value, field, operator)
+/// * 'orderby_value The order by value. For example {"field_1": true} for order by field_1 ascending
 pub fn query(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
-    value: serde_json::Value,
-    operator: dto::FieldOperator,
-    field: &str,
+    where_value: Option<(serde_json::Value, dto::FieldOperator, &str)>,
+    orderby_value: Option<HashMap<String, bool>>,
 ) -> Result<Query> {
     let url = firebase_url_query(auth.project_id());
-    let value = crate::firebase_rest_to_rust::serde_value_to_firebase_value(&value);
 
-    let query_request = dto::RunQueryRequest {
-        structured_query: Some(dto::StructuredQuery {
-            select: Some(dto::Projection { fields: None }),
-            where_: Some(dto::Filter {
-                field_filter: Some(dto::FieldFilter {
-                    value,
-                    op: operator,
-                    field: dto::FieldReference {
-                        field_path: field.to_owned(),
-                    },
+    let mut structured_query = dto::StructuredQuery {
+        select: Some(dto::Projection { fields: None }),
+        order_by: None,
+        from: Some(vec![dto::CollectionSelector {
+            collection_id: Some(collection_id.to_owned()),
+            ..Default::default()
+        }]),
+        where_: None,
+        ..Default::default()
+    };
+
+    if let Some(wv) = where_value {
+        let (v, operator, field) = wv;
+        let value = crate::firebase_rest_to_rust::serde_value_to_firebase_value(&v);
+        structured_query.where_ = Some(dto::Filter {
+            field_filter: Some(dto::FieldFilter {
+                value,
+                op: operator,
+                field: dto::FieldReference {
+                    field_path: field.to_owned(),
+                },
+            }),
+            ..Default::default()
+        });
+    }
+
+    if let Some(ov) = orderby_value {
+        let mut orders = vec![];
+        for (f, asc) in ov {
+            let mut o = dto::Order {
+                field: Some(dto::FieldReference {
+                    field_path: f.to_owned(),
                 }),
                 ..Default::default()
-            }),
-            from: Some(vec![dto::CollectionSelector {
-                collection_id: Some(collection_id.to_owned()),
-                ..Default::default()
-            }]),
-            ..Default::default()
-        }),
+            };
+            o.direction = if asc { None } else { Some("desc".to_owned()) };
+            orders.push(o);
+        }
+        structured_query.order_by = Some(orders);
+    }
+
+    let query_request = dto::RunQueryRequest {
+        structured_query: Some(structured_query),
         ..Default::default()
     };
 
@@ -97,41 +123,63 @@ pub fn query(
     Ok(Query(json.unwrap_or_default().into_iter()))
 }
 
+/// [Async] Query
 /// ## Arguments
 /// * 'auth' The authentication token
 /// * 'collectionid' The collection id; "my_collection" or "a/nested/collection"
-/// * 'value' The query / filter value. For example "car".
-/// * 'operator' The query operator. For example "EQUAL".
-/// * 'field' The query / filter field. For example "type".
+/// * 'select_value' The query / filter value. For example (value, field, operator)
+/// * 'orderby_value The order by value. For example {"field_1": true} for order by field_1 ascending
 pub async fn query_async(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
-    value: serde_json::Value,
-    operator: dto::FieldOperator,
-    field: &str,
+    where_value: Option<(serde_json::Value, dto::FieldOperator, &str)>,
+    orderby_value: Option<HashMap<String, bool>>,
 ) -> Result<Query> {
     let url = firebase_url_query(auth.project_id());
-    let value = crate::firebase_rest_to_rust::serde_value_to_firebase_value(&value);
 
-    let query_request = dto::RunQueryRequest {
-        structured_query: Some(dto::StructuredQuery {
-            select: Some(dto::Projection { fields: None }),
-            where_: Some(dto::Filter {
-                field_filter: Some(dto::FieldFilter {
-                    value,
-                    op: operator,
-                    field: dto::FieldReference {
-                        field_path: field.to_owned(),
-                    },
+    let mut structured_query = dto::StructuredQuery {
+        select: Some(dto::Projection { fields: None }),
+        order_by: None,
+        from: Some(vec![dto::CollectionSelector {
+            collection_id: Some(collection_id.to_owned()),
+            ..Default::default()
+        }]),
+        where_: None,
+        ..Default::default()
+    };
+
+    if let Some(wv) = where_value {
+        let (v, operator, field) = wv;
+        let value = crate::firebase_rest_to_rust::serde_value_to_firebase_value(&v);
+        structured_query.where_ = Some(dto::Filter {
+            field_filter: Some(dto::FieldFilter {
+                value,
+                op: operator,
+                field: dto::FieldReference {
+                    field_path: field.to_owned(),
+                },
+            }),
+            ..Default::default()
+        });
+    }
+
+    if let Some(ov) = orderby_value {
+        let mut orders = vec![];
+        for (f, asc) in ov {
+            let mut o = dto::Order {
+                field: Some(dto::FieldReference {
+                    field_path: f.to_owned(),
                 }),
                 ..Default::default()
-            }),
-            from: Some(vec![dto::CollectionSelector {
-                collection_id: Some(collection_id.to_owned()),
-                ..Default::default()
-            }]),
-            ..Default::default()
-        }),
+            };
+            o.direction = if asc { None } else { Some("desc".to_owned()) };
+            orders.push(o);
+        }
+        structured_query.order_by = Some(orders);
+    }
+
+    let query_request = dto::RunQueryRequest {
+        structured_query: Some(structured_query),
         ..Default::default()
     };
 
