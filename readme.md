@@ -118,8 +118,8 @@ In the following example the collection "tests" is queried for document(s) with 
 ```rust
 use firestore_db_and_auth::{documents, dto};
 
-let orderby = HashMap::new();
-orderby.insert("a_string".to_owned(), true); // true for ascending
+let orderby = vec![];
+orderby.push(("a_string".to_owned(), true)); // true for ascending
 
 let values = documents::query(&session, "tests", Some("Sam Weiss".into(), dto::FieldOperator::EQUAL, "id"), Some(orderby))?;
 for metadata in values {

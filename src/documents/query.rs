@@ -1,5 +1,4 @@
 use super::*;
-use std::collections::HashMap;
 use std::vec::IntoIter;
 
 ///
@@ -19,10 +18,10 @@ use std::vec::IntoIter;
 ///                                         &[include_str!("../../tests/service-account-for-tests.jwks")])?;
 /// # let session = ServiceSession::new(credentials)?;
 ///
-/// let mut orderby = HashMap::new();
-/// orderby.insert("age".to_owned(), true);
+/// let mut orderby = vec![];
+/// orderby.push(("age".to_owned(), true));
 ///
-/// let values: documents::Query = documents::query(&session, "tests", Some(("Sam Weiss".into(), "id", dto::FieldOperator::EQUAL)), Some(orderby))?;
+/// let values: documents::Query = documents::query(&session, "tests", Some(("Sam Weiss".into(), dto::FieldOperator::EQUAL, "id")), Some(orderby))?;
 /// for metadata in values {
 ///     println!("id: {}, created: {}, updated: {}", &metadata.name, metadata.create_time.as_ref().unwrap(), metadata.update_time.as_ref().unwrap());
 ///     // Fetch the actual document
@@ -37,12 +36,12 @@ use std::vec::IntoIter;
 /// * 'auth' The authentication token
 /// * 'collectionid' The collection id; "my_collection" or "a/nested/collection"
 /// * 'select_value' The query / filter value. For example (value, field, operator)
-/// * 'orderby_value The order by value. For example {"field_1": true} for order by field_1 ascending
+/// * 'orderby_value The order by value. For example array of ("field_1": true) for order by field_1 ascendingly, ("a_map.`000`": true) for orderby query start with numbers
 pub fn query(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
     where_value: Option<(serde_json::Value, dto::FieldOperator, &str)>,
-    orderby_value: Option<HashMap<String, bool>>,
+    orderby_value: Option<Vec<(String, bool)>>,
 ) -> Result<Query> {
     let url = firebase_url_query(auth.project_id());
 
@@ -128,12 +127,12 @@ pub fn query(
 /// * 'auth' The authentication token
 /// * 'collectionid' The collection id; "my_collection" or "a/nested/collection"
 /// * 'select_value' The query / filter value. For example (value, field, operator)
-/// * 'orderby_value The order by value. For example {"field_1": true} for order by field_1 ascending
+/// * 'orderby_value The order by value. For example array of ("field_1": true) for order by field_1 ascendingly, ("a_map.`000`": true) for orderby query start with numbers
 pub async fn query_async(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
     where_value: Option<(serde_json::Value, dto::FieldOperator, &str)>,
-    orderby_value: Option<HashMap<String, bool>>,
+    orderby_value: Option<Vec<(String, bool)>>,
 ) -> Result<Query> {
     let url = firebase_url_query(auth.project_id());
 
