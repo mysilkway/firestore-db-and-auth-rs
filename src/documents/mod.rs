@@ -3,6 +3,7 @@
 //! Interact with Firestore documents.
 //! Please check the root page of this documentation for examples.
 
+use super::backoff::*;
 use super::dto;
 use super::errors::{extract_google_api_error, extract_google_api_error_async, FirebaseError, Result};
 use super::firebase_rest_to_rust::{document_to_pod, pod_to_document};

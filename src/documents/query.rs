@@ -92,52 +92,38 @@ pub fn query(
         ..Default::default()
     };
 
-    let resp = auth
-        .client()
-        .post(&url)
-        .bearer_auth(auth.access_token().to_owned())
-        .json(&query_request)
-        .send()?;
+    let resp = exp_backoff(
+        || {
+            let resp = auth
+                .client()
+                .post(&url)
+                .bearer_auth(auth.access_token().to_owned())
+                .json(&query_request)
+                .send()
+                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
 
-    let resp = extract_google_api_error(resp, || collection_id.to_owned())?;
+            let status = resp.status().as_u16();
+
+            match extract_google_api_error(resp, || collection_id.to_owned()) {
+                Ok(new_resp) => Ok(new_resp),
+                Err(err) => {
+                    if retryable_http_status(status) {
+                        Err(backoff::Error::Transient(err))
+                    } else {
+                        Err(backoff::Error::Permanent(err))
+                    }
+                }
+            }
+        },
+        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
+    )?;
 
     let json: Option<Vec<dto::RunQueryResponse>> = resp.json()?;
 
     Ok(Query(json.unwrap_or_default().into_iter()))
 }
 
-///
 /// [Async] Query
-/// Queries the database for specific documents, for example all documents in a collection of 'type' == "car".
-///
-/// Example:
-/// ```rust
-/// # use serde::{Serialize, Deserialize};
-/// #[derive(Debug, Serialize, Deserialize)]
-/// struct DemoDTO { a_string: String, an_int: u32, }
-///
-/// use firestore_db_and_auth::{documents, dto};
-/// use std::collections::HashMap;
-/// # use firestore_db_and_auth::{credentials::Credentials, ServiceSession, errors::Result};
-///
-/// # let credentials = Credentials::new(include_str!("../../firebase-service-account.json"),
-///                                         &[include_str!("../../tests/service-account-for-tests.jwks")])?;
-/// # let session = ServiceSession::new(credentials)?;
-///
-/// let mut orderby = HashMap::new();
-/// orderby.insert("age".to_owned(), true);
-///
-/// let values: documents::Query = documents::query(&session, "tests", Some(("Sam Weiss".into(), "id", dto::FieldOperator::EQUAL)), Some(orderby))?;
-/// for metadata in values {
-///     println!("id: {}, created: {}, updated: {}", &metadata.name, metadata.create_time.as_ref().unwrap(), metadata.update_time.as_ref().unwrap());
-///     // Fetch the actual document
-///     // The data is wrapped in a Result<> because fetching new data could have failed
-///     let doc : DemoDTO = documents::read_by_name(&session, &metadata.name)?;
-///     println!("{:?}", doc);
-/// }
-///
-/// ```
-///
 /// ## Arguments
 /// * 'auth' The authentication token
 /// * 'collectionid' The collection id; "my_collection" or "a/nested/collection"
@@ -197,15 +183,33 @@ pub async fn query_async(
         ..Default::default()
     };
 
-    let resp = auth
-        .client_async()
-        .post(&url)
-        .bearer_auth(auth.access_token().to_owned())
-        .json(&query_request)
-        .send()
-        .await?;
+    let resp = exp_backoff_async(
+        || async {
+            let resp = auth
+                .client_async()
+                .post(&url)
+                .bearer_auth(auth.access_token().to_owned())
+                .json(&query_request)
+                .send()
+                .await
+                .map_err(|err| backoff::Error::Permanent(FirebaseError::from(err)))?;
 
-    let resp = extract_google_api_error_async(resp, || collection_id.to_owned()).await?;
+            let status = resp.status().as_u16();
+
+            match extract_google_api_error_async(resp, || collection_id.to_owned()).await {
+                Ok(new_resp) => Ok(new_resp),
+                Err(err) => {
+                    if retryable_http_status(status) {
+                        Err(backoff::Error::Transient(err))
+                    } else {
+                        Err(backoff::Error::Permanent(err))
+                    }
+                }
+            }
+        },
+        FIRESTORE_REQUEST_RETRY_MAX_ELAPSED_TIME,
+    )
+    .await?;
 
     let json: Option<Vec<dto::RunQueryResponse>> = resp.json().await?;
 

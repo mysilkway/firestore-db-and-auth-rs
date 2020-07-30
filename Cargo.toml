@@ -1,6 +1,6 @@
 [package]
 name = "firestore-db-and-auth"
-version = "0.6.0"
+version = "0.6.9"
 authors = ["David Gräff <david.graeff@web.de>"]
 edition = "2018"
 license = "MIT"
@@ -19,6 +19,7 @@ chrono = { version = "0.4", features = ["serde"] }
 biscuit = "0.4"
 ring = "0.16"
 base64 = "0.11"
+backoff = { version = "0.1", features = ["async-std"] }
 
 [dependencies.rocket]
 version = "0.4.2"
@@ -41,3 +42,6 @@ external_doc = []
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["macros", "fs"] }
+
+[patch.crates-io]
+backoff = { git = "https://github.com/mysilkway/backoff", features = ["async-std"] }

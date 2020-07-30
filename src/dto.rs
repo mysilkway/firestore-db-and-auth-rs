@@ -317,7 +317,7 @@ pub struct Value {
 
     #[serde(rename = "nullValue")]
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub null_value: Option<String>,
+    pub null_value: Option<serde_json::Value>,
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
