@@ -192,7 +192,7 @@ fn user_account_session() -> errors::Result<()> {
     let results: Vec<dto::Document> = documents::query(
         &user_session,
         "tests",
-        Some(("abc".into(), "a_string", dto::FieldOperator::EQUAL)),
+        Some(("abc".into(), dto::FieldOperator::EQUAL, "a_string")),
         None,
     )?
     .collect();
@@ -236,7 +236,7 @@ fn user_account_session() -> errors::Result<()> {
     let count = documents::query(
         &user_session,
         "tests",
-        Some(("abc".into(), "a_string", dto::FieldOperator::EQUAL)),
+        Some(("abc".into(), dto::FieldOperator::EQUAL, "a_string")),
         None,
     )?
     .count();
@@ -247,7 +247,7 @@ fn user_account_session() -> errors::Result<()> {
     let count = documents::query(
         &user_session,
         "tests",
-        Some((f.into(), "a_float", dto::FieldOperator::EQUAL)),
+        Some((f.into(), dto::FieldOperator::EQUAL, "a_float")),
         None,
     )?
     .count();
@@ -354,7 +354,7 @@ fn async_service_session() -> errors::Result<()> {
         .block_on(documents::query_async(
             &mut session,
             "tests",
-            Some(("abcd".into(), "a_string", dto::FieldOperator::EQUAL)),
+            Some(("abcd".into(), dto::FieldOperator::EQUAL, "a_string")),
             None,
         ))?
         .collect();

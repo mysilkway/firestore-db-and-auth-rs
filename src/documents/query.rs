@@ -41,7 +41,7 @@ use std::vec::IntoIter;
 pub fn query(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
-    where_value: Option<(serde_json::Value, &str, dto::FieldOperator)>,
+    where_value: Option<(serde_json::Value, dto::FieldOperator, &str)>,
     orderby_value: Option<HashMap<String, bool>>,
 ) -> Result<Query> {
     let url = firebase_url_query(auth.project_id());
@@ -58,7 +58,7 @@ pub fn query(
     };
 
     if let Some(wv) = where_value {
-        let (v, field, operator) = wv;
+        let (v, operator, field) = wv;
         let value = crate::firebase_rest_to_rust::serde_value_to_firebase_value(&v);
         structured_query.where_ = Some(dto::Filter {
             field_filter: Some(dto::FieldFilter {
@@ -146,7 +146,7 @@ pub fn query(
 pub async fn query_async(
     auth: &impl FirebaseAuthBearer,
     collection_id: &str,
-    where_value: Option<(serde_json::Value, &str, dto::FieldOperator)>,
+    where_value: Option<(serde_json::Value, dto::FieldOperator, &str)>,
     orderby_value: Option<HashMap<String, bool>>,
 ) -> Result<Query> {
     let url = firebase_url_query(auth.project_id());
@@ -163,7 +163,7 @@ pub async fn query_async(
     };
 
     if let Some(wv) = where_value {
-        let (v, field, operator) = wv;
+        let (v, operator, field) = wv;
         let value = crate::firebase_rest_to_rust::serde_value_to_firebase_value(&v);
         structured_query.where_ = Some(dto::Filter {
             field_filter: Some(dto::FieldFilter {
