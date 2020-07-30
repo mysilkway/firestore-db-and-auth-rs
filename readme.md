@@ -117,7 +117,7 @@ use firestore_db_and_auth::{documents, dto};
 let orderby = HashMap::new();
 orderby.insert("a_string".to_owned(), true); // true for ascending
 
-let values = documents::query(&session, "tests", ("Sam Weiss".into(), dto::FieldOperator::EQUAL, "id"), Some(orderby))?;
+let values = documents::query(&session, "tests", Some("Sam Weiss".into(), dto::FieldOperator::EQUAL, "id"), Some(orderby))?;
 for metadata in values {
     println!("id: {}, created: {}, updated: {}", metadata.name.as_ref().unwrap(), metadata.create_time.as_ref().unwrap(), metadata.update_time.as_ref().unwrap());
     // Fetch the actual document
