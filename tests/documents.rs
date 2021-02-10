@@ -296,7 +296,7 @@ fn async_service_session() -> errors::Result<()> {
         a_map: Some(a_map.to_owned()),
     };
 
-    let mut sys = Runtime::new()?;
+    let sys = Runtime::new()?;
 
     println!("Create document");
     sys.block_on(documents::create_async(

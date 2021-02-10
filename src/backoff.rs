@@ -1,5 +1,5 @@
 use crate::errors::{FirebaseError, Result};
-use backoff::{future::FutureOperation, ExponentialBackoff, Operation};
+use backoff::{retry, ExponentialBackoff, future::retry as future_retry};
 use std::future::Future;
 use std::time::Duration;
 
@@ -13,17 +13,17 @@ where
 {
     let mut backoff = ExponentialBackoff::default();
     backoff.max_elapsed_time = Some(Duration::from_secs(max_elapsed_time));
-    f.retry(backoff).await
+    future_retry(backoff, f).await
 }
 
 /// run function with exponential backoff
 pub fn exp_backoff<T, F: FnMut() -> std::result::Result<T, backoff::Error<FirebaseError>>>(
-    mut f: F,
+    f: F,
     max_elapsed_time: u64,
 ) -> Result<T> {
     let mut backoff = ExponentialBackoff::default();
     backoff.max_elapsed_time = Some(Duration::from_secs(max_elapsed_time));
-    f.retry(&mut backoff).map_err(|err| match err {
+    retry(backoff, f).map_err(|err| match err {
         backoff::Error::Permanent(err) => err,
         backoff::Error::Transient(err) => err,
     })
